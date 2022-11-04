@@ -11,8 +11,8 @@ class GraphAttentionLayer(nn.Module):
     def __init__(self, in_features, out_features, dropout, alpha, concat=True):
         super(GraphAttentionLayer, self).__init__()
         self.dropout = dropout
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features = in_features # 1433 unique words
+        self.out_features = out_features # 8 default num
         self.alpha = alpha
         self.concat = concat
 
@@ -24,16 +24,17 @@ class GraphAttentionLayer(nn.Module):
         self.leakyrelu = nn.LeakyReLU(self.alpha)
 
     def forward(self, h, adj):
-        Wh = torch.mm(h, self.W) # h.shape: (N, in_features), Wh.shape: (N, out_features)
-        e = self._prepare_attentional_mechanism_input(Wh)
+        Wh = torch.mm(h, self.W) # h.shape:(N, in_features) Wh.shape:(N, out_features)
+        e = self._prepare_attentional_mechanism_input(Wh) # (i, j) the attention of i-th & j-th
 
         zero_vec = -9e15*torch.ones_like(e)
-        attention = torch.where(adj > 0, e, zero_vec)
+        attention = torch.where(adj > 0, e, zero_vec) # mask attention, only include neighbors
         attention = F.softmax(attention, dim=1)
         attention = F.dropout(attention, self.dropout, training=self.training)
-        h_prime = torch.matmul(attention, Wh)
+        h_prime = torch.matmul(attention, Wh) # Wh.shape [N, out_features] attention.shape [N, N]
 
         if self.concat:
+            # if concat is True, treat it as an unit and activate
             return F.elu(h_prime)
         else:
             return h_prime
