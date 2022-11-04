@@ -9,15 +9,21 @@ class GAT(nn.Module):
         """Dense version of GAT."""
         super(GAT, self).__init__()
         self.dropout = dropout
-
+        
         self.attentions = [GraphAttentionLayer(nfeat, nhid, dropout=dropout, alpha=alpha, concat=True) for _ in range(nheads)]
+        
+        # Add layer attention_1 ~ attention_8
         for i, attention in enumerate(self.attentions):
             self.add_module('attention_{}'.format(i), attention)
-
+        
+        # Attention layer as the full connection, don't need to activate the output
         self.out_att = GraphAttentionLayer(nhid * nheads, nclass, dropout=dropout, alpha=alpha, concat=False)
-
+        
+    # x :features adj :adjacent matrix
     def forward(self, x, adj):
+        # Drop out some features at probability 0.6
         x = F.dropout(x, self.dropout, training=self.training)
+        # Attentionlayer forward by att(x, adj)
         x = torch.cat([att(x, adj) for att in self.attentions], dim=1)
         x = F.dropout(x, self.dropout, training=self.training)
         x = F.elu(self.out_att(x, adj))
