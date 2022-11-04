@@ -78,6 +78,7 @@ def train(epoch):
     t = time.time()
     model.train()
     optimizer.zero_grad()
+    # forward
     output = model(features, adj)
     loss_train = F.nll_loss(output[idx_train], labels[idx_train])
     acc_train = accuracy(output[idx_train], labels[idx_train])
@@ -128,6 +129,7 @@ for epoch in range(args.epochs):
     else:
         bad_counter += 1
 
+    # stop epoch when the loss cannot decrease
     if bad_counter == args.patience:
         break
 
